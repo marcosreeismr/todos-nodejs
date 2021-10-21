@@ -17,7 +17,7 @@ function checksExistsUserAccount(request, response, next) {
   const user = users.find((user) => user.username === username);
 
   if (!user) {
-    return response.status(400).json({ error: "Conta não existente!" })
+    return response.status(400).json({ error: 'Mensagem do erro' })
   }
 
   request.user = user;
@@ -29,22 +29,24 @@ function checksExistsUserAccount(request, response, next) {
 app.post('/users', (request, response) => {
   const { name, username } = request.body;
 
-  const userExists = users.some(
+  const userExists = users.find(
     (user) => user.username === username
   );
 
   if (userExists) {
-    return response.status(400).json({ error: "Usuário já existe" })
+    return response.status(400).json({ error: 'Mensagem do erro' })
   }
 
-  users.push({
+  const user = {
     name,
     username,
     id: uuidv4(),
     todos: []
-  });
+  };
 
-  return response.status(201).send();
+  users.push(user);
+
+  return response.status(201).json(user);
 
 });
 
@@ -69,7 +71,7 @@ app.post('/todos', checksExistsUserAccount, (request, response) => {
 
   user.todos.push(todosOperation);
 
-  return response.status(201).send();
+  return response.status(201).json(todosOperation);
 });
 
 app.put('/todos/:id', checksExistsUserAccount, (request, response) => {
@@ -82,10 +84,14 @@ app.put('/todos/:id', checksExistsUserAccount, (request, response) => {
 
   const todo = user.todos.find((todo) => todo.id = id);
 
+  if(!todo){
+    return response.status(404).json({ error: 'Mensagem do erro' });
+  }
+
   todo.title = title;
   todo.deadline = new Date(deadline);
 
-  return response.status(200).send();
+  return response.json(todo);
 });
 
 app.patch('/todos/:id/done', checksExistsUserAccount, (request, response) => {
@@ -94,9 +100,14 @@ app.patch('/todos/:id/done', checksExistsUserAccount, (request, response) => {
   const id = request.params.id;
 
   const todo = user.todos.find((todo) => todo.id = id);
+
+  if(!todo){
+    return response.status(404).json({ error: 'Mensagem do erro' });
+  }
+
   todo.done = true;
 
-  return response.status(200).send();
+  return response.status(200).json(todo);
 });
 
 app.delete('/todos/:id', checksExistsUserAccount, (request, response) => {
@@ -104,11 +115,15 @@ app.delete('/todos/:id', checksExistsUserAccount, (request, response) => {
 
   const id = request.params.id;
 
-  const todos = user.todos.filter((todo) => todo.id != id);
+  const index = user.todos.findIndex((todo ,i) => todo.id = id);
 
-  user.todos = todos;
+  if(index === -1){
+    return response.status(404).json({ error: 'Mensagem do erro' });
+  }
 
-  return response.status(200).send();
+  user.todos.splice(index, 1);
+
+  return response.status(204).json();
 });
 
 module.exports = app;
